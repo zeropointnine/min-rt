@@ -71,7 +71,7 @@ fn main() {
 }
 
 /// Adds some rudimentary movement for fun
-fn update_scene(scene: &mut Scene, time: f32) { return;
+fn update_scene(scene: &mut Scene, time: f32) {
     // light
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
