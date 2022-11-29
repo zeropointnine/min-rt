@@ -19,6 +19,8 @@ static TIME_INCREMENT: f32 = 5.0;
 ///
 fn main() -> Result<(), Error> {
 
+    println!("\r\nPress spacebar to update scene");
+
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
     let window = {
@@ -44,12 +46,10 @@ fn main() -> Result<(), Error> {
     let mut is_scene_dirty = true;
     let mut time = 0_f32;
 
-    println!("\r\nPress spacebar to update scene");
-
     event_loop.run(move |event, _, control_flow| {
 
-        // Draw `pixels` if necessary
         if let Event::RedrawRequested(_) = event {
+            // Copy from the canvas to `pixels`
             pixels.get_frame_mut().copy_from_slice(&canvas.data);
             if pixels
                 .render()
@@ -65,18 +65,18 @@ fn main() -> Result<(), Error> {
         if input.update(&event) {
 
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
-                // Close events
+                // Quit
                 *control_flow = ControlFlow::Exit;
                 return;
-            }
-
-            if input.key_pressed(VirtualKeyCode::Space) {
-                is_scene_dirty = true;
             }
 
             if let Some(size) = input.window_resized() {
                 // Resize the window
                 pixels.resize_surface(size.width, size.height);
+            }
+
+            if input.key_pressed(VirtualKeyCode::Space) {
+                is_scene_dirty = true;
             }
 
             if is_scene_dirty {

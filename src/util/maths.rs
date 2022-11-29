@@ -12,3 +12,8 @@ pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {
         value
     }
 }
+
+/// Is value within the given range (inclusive)
+pub fn within(value: f32, min: f32, max: f32) -> bool {
+    value >= min && value <= max
+}

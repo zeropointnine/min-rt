@@ -11,10 +11,11 @@ fn main() {
     let mut canvas
         = ConsoleCompositeCanvas::new(80, 40, Color::new(255, 64, 64));
 
-    // Programmatically construct a minimal scene
+    // Construct a minimal scene programmatically
     let scene = {
         let mut specs = Specs::new_with_defaults();
         specs.pixel_ar = 0.40; // tall pixel aspect ratio because terminal
+        specs.background_color.set(0, 0, 0);
 
         let light = Light::Ambient { intensity: 1.0 };
         let mut lights = Vec::<Light>::new();

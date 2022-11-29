@@ -4,6 +4,20 @@ use crate::base::vec3::Vec3;
 use crate::canvas::canvas::Canvas;
 use crate::util::maths;
 
+static RENDERER_EPSILON: f32 = 0.001;
+
+/// Logic for rendering a `Scene`` onto a `Canvas`
+///
+/// This is a fairly literal translation of the pseudo-code from the book
+/// ["Computer Graphics from Scratch"](https://gabrielgambetta.com/computer-graphics-from-scratch/)
+/// by Gabriel Gambetta into Rust. The names of functions and parameters have been preserved for
+/// easy cross-referencing.
+///
+
+// todo update function description comments
+
+///
+///
 pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
 
     let specs = &scene.specs;
@@ -32,29 +46,14 @@ pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
             y *= specs.viewport_height / specs.canvas_height;
             let d = canvas_to_viewport(x, y, &scene.specs);
 
-            let color: Color;
             let o = &specs.camera_pos;
-            let opt = trace_ray(o, &d, 1.0, f32::INFINITY, &scene.spheres);
-            match opt {
-                None => {
-                    color = scene.specs.background_color;
-                }
-                Some((sphere_index, closest_t)) => {
-                    let p = o + &(&d * closest_t); // point on surface
-                    let sphere = &scene.spheres[sphere_index];
-                    let mut n = &p - &sphere.center; // surface normal
-                    n = &n * (1.0 / n.length());
-                    let v = &d * -1.0;
-                    let intensity = calculate_lighting(&p, &n, &v, sphere.specular, &scene.lights);
-                    color = sphere.color * intensity;
-                }
-            }
+            let color = trace_ray(o, &d, 1.0, f32::INFINITY, &scene);
             canvas.set_value(ix, iy, &color);
         }
     }
 }
 
-/// Don't really understand how this is useful, but
+/// Don't understand how the canvas width and height properties are useful, but
 fn canvas_to_viewport(x: f32, y: f32, specs: &Specs) -> Vec3 {
     let x = x * specs.viewport_width / specs.canvas_width;
     let y = y * specs.viewport_height / specs.canvas_height;
@@ -63,7 +62,6 @@ fn canvas_to_viewport(x: f32, y: f32, specs: &Specs) -> Vec3 {
 
 /// Returns the two 'distances' on a ray where it intersects a sphere.
 fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f32, f32) {
-
     let r = sphere.radius;
     let c0 = o - &sphere.center;
     let a = d.dot(d);
@@ -80,83 +78,91 @@ fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f32, f32) {
     (t1, t2)
 }
 
-/// Finds the nearest intersection point between ray and sphere within the given range t,
-/// and returns the sphere's index and the point.
-fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, spheres: &Vec<Sphere>) -> Option<(usize, f32)> {
+/// Returns sphere index and closest_t // return borrowed sphere reference rather than index?
+fn closest_intersection(o: &Vec3, d: &Vec3, t_min:f32 , t_max: f32, spheres: &Vec<Sphere>) -> Option<(usize, f32)> {
 
     let mut closest_t = f32::INFINITY;
     let mut closest_sphere_index: Option<usize> = None;
-
-    for i in 0..spheres.len() {
-        let sphere = &spheres[i];
-        let (t1, t2) = intersect_ray_sphere(&o, &d, sphere);
-        if t1 >=- t_min && t1 <= t_max && t1 < closest_t {
+    for (i, sphere) in spheres.iter().enumerate() {
+        let (t1, t2) = intersect_ray_sphere(o, d, &sphere);
+        if maths::within(t1, t_min, t_max) && t1 < closest_t {
             closest_t = t1;
             closest_sphere_index = Some(i);
         }
-        if t2 >= t_min && t2 <= t_max && t2 < closest_t {
+        if maths::within(t2, t_min, t_max) && t2 < closest_t {
             closest_t = t2;
             closest_sphere_index = Some(i);
         }
     }
-
-    if closest_sphere_index.is_none() {
-        return None;
+    match closest_sphere_index {
+        None => None,
+        Some(closest_sphere_index) => Some((closest_sphere_index, closest_t))
     }
-
-    let closest_sphere_index = closest_sphere_index.unwrap();
-    Some((closest_sphere_index, closest_t))
 }
 
-/// p - point on surface
-/// n - normal
-/// v - something something specularity
-/// spec - specularity factor
-/// lights - the lights to consider
-///
-fn calculate_lighting(p: &Vec3, n: &Vec3, v: &Vec3, spec: f32, lights: &Vec::<Light>) -> f32 {
+fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, scene: &Scene) -> Color {
 
-    let mut sum_intensity = 0_f32;
+    let option = closest_intersection(o, d, t_min, t_max, &scene.spheres);
+    if option.is_none() {
+        return scene.specs.background_color.clone();
+    }
+    let (closest_sphere_index, closest_t) = option.unwrap();
+    let closest_sphere = &scene.spheres[closest_sphere_index];
+    let p = o + (d * closest_t);
+    let mut n = p - closest_sphere.center;
+    n = n / n.length();
+    let intensity = compute_lighting(&p, &n, &-d, closest_sphere.specular, &scene);
+    return closest_sphere.color * intensity
+}
 
-    for light in lights {
+fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 {
 
-        if let Light::Ambient { intensity } = light {
-            sum_intensity  += intensity;
+    let mut i = 0.0;
+
+    for light in &scene.lights {
+
+        let l: Vec3;
+        let t_max;
+        let intens: f32;
+
+        match light {
+            Light::Ambient { intensity } => {
+                i += intensity;
+                continue;
+            },
+            Light::Point{ intensity, position} => {
+                l = position - p;
+                t_max = 1.0;
+                intens = *intensity;
+            },
+            Light::Directional { intensity, direction } => {
+                l = direction.clone();
+                t_max = f32::INFINITY;
+                intens = *intensity;
+            }
+        }
+
+        // Shadow check
+        let option = closest_intersection(p, &l, RENDERER_EPSILON, t_max, &scene.spheres);
+        if option.is_some() {
             continue;
         }
 
-        // find `l` (which is somethingsomething) for either point light or directional light
-        let l;
-        let light_intensity: f32;
-        if let Light::Point { intensity, position } = light {
-            l = position - p;
-            light_intensity = *intensity;
-        } else if let Light::Directional { intensity, direction} = light {
-            l = direction.clone();
-            light_intensity = *intensity;
-        } else { // unreachable actually
-            continue;
-        }
-
+        // Diffuse
         let n_dot_l = n.dot(&l);
         if n_dot_l > 0.0 {
-            let modif = light_intensity * n_dot_l / (n.length() * l.length());
-            sum_intensity += modif;
+            let modif = intens * n_dot_l / (n.length() * l.length());
+            i += modif;
         }
 
-        // plus specular highlight
-        if spec != -1.0 {
+        // Specular
+        if s > 0.0 {
             let r = n * (2.0 * n.dot(&l));
             let r = &r - &l;
             let r_dot_v = r.dot(&v);
             if r_dot_v > 0.0 {
-                sum_intensity += light_intensity * (r_dot_v / (r.length() * v.length())).powf(spec);
+                i += intens * (r_dot_v / (r.length() * v.length())).powf(s);
             }
         }
-    }
-    sum_intensity
+    }i
 }
-
-// fn calculate_point_light_intensity(point_light: Light::Point) -> f32 {
-//
-// }
