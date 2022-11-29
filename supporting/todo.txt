@@ -1,0 +1,15 @@
+for canvases, use vec![]
+
+continue with operator overrides for vec3
+
+make multithreaded option
+
+camera position + orientation
+
+consider a render loop abstraction
+
+reorganize folder/mod hierarchy
+    make `util` package
+    move windowed functionality into its own folder, with cargo subproject
+    consider making into a library proper with examples
+

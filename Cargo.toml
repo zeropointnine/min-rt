@@ -1,0 +1,14 @@
+[package]
+name = "min-rt"
+version = "0.1.0"
+edition = "2021"
+repository = ""
+categories = ["graphics", "rendering"]
+
+[dependencies]
+yaml-rust = "0.4.5"
+
+[workspace]
+members = [
+    "examples/*"
+]
