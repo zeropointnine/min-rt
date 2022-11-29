@@ -26,6 +26,20 @@ impl Color {
     }
 }
 
+// operator overloads
+
+// Color Color
+impl ops::Add<Color> for Color {
+    type Output = Color;
+    fn add(self, rhs: Color) -> Color {
+        let r: u8 = maths::u8_add_clamped(self.r, rhs.r);
+        let g: u8 = maths::u8_add_clamped(self.g, rhs.g);
+        let b: u8 = maths::u8_add_clamped(self.b, rhs.b);
+        Color::new(r, g, b)
+    }
+}
+
+// Color f32
 impl ops::Mul<f32> for Color {
     type Output = Color;
     fn mul(self, rhs: f32) -> Color {
@@ -36,6 +50,7 @@ impl ops::Mul<f32> for Color {
     }
 }
 
+// &Color f32
 impl ops::Mul<f32> for &Color {
     type Output = Color;
     fn mul(self, rhs: f32) -> Color {

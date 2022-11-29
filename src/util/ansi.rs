@@ -13,8 +13,8 @@ pub static PART_FOREGROUND_TRUECOLOR: &str = "38;2";
 pub static CODE_CLEAR: &str = "\x1b[2J\x1b[H";
 pub static CODE_TOP_LEFT: &str = "\x1b[H";
 
-pub static CODE_HIDE_CURSOR: &str = "\x1b[?25lm";
-pub static CODE_SHOW_CURSOR: &str = "\x1b[?25hm";
+pub static CODE_HIDE_CURSOR: &str = "\x1b[?25l";
+pub static CODE_SHOW_CURSOR: &str = "\x1b[?25h";
 
 pub fn move_cursor(col:i32, row:i32) -> String {
     format!("{}{row};{col}H", PART_START, row = row + 1, col = col + 1) // `+1` bc 1-indexed

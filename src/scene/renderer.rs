@@ -4,7 +4,8 @@ use crate::base::vec3::Vec3;
 use crate::canvas::canvas::Canvas;
 use crate::util::maths;
 
-static RENDERER_EPSILON: f32 = 0.001;
+const EPSILON: f32 = 0.001;
+const RECURSION_DEPTH: usize = 3;
 
 /// Logic for rendering a `Scene`` onto a `Canvas`
 ///
@@ -15,6 +16,7 @@ static RENDERER_EPSILON: f32 = 0.001;
 ///
 
 // todo update function description comments
+// todo consider making this a trait on Scene. or encapsulated in some other construct.
 
 ///
 ///
@@ -47,7 +49,7 @@ pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
             let d = canvas_to_viewport(x, y, &scene.specs);
 
             let o = &specs.camera_pos;
-            let color = trace_ray(o, &d, 1.0, f32::INFINITY, &scene);
+            let color = trace_ray(o, &d, 1.0, f32::INFINITY, &scene, RECURSION_DEPTH);
             canvas.set_value(ix, iy, &color);
         }
     }
@@ -100,19 +102,33 @@ fn closest_intersection(o: &Vec3, d: &Vec3, t_min:f32 , t_max: f32, spheres: &Ve
     }
 }
 
-fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, scene: &Scene) -> Color {
+fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, scene: &Scene, recursion_depth: usize) -> Color {
 
     let option = closest_intersection(o, d, t_min, t_max, &scene.spheres);
     if option.is_none() {
         return scene.specs.background_color.clone();
     }
+
+    // Compute local color
     let (closest_sphere_index, closest_t) = option.unwrap();
     let closest_sphere = &scene.spheres[closest_sphere_index];
     let p = o + (d * closest_t);
     let mut n = p - closest_sphere.center;
     n = n / n.length();
     let intensity = compute_lighting(&p, &n, &-d, closest_sphere.specular, &scene);
-    return closest_sphere.color * intensity
+    let local_color = closest_sphere.color * intensity;
+
+    // If we hit the recursion limit or the object is not reflective, we're done
+    let r = closest_sphere.reflective;
+    if recursion_depth == 0 || r <= 0.0 {
+        return local_color;
+    }
+
+    // Compute the reflected color
+    let R = reflect_ray(&-d, &n);
+    let reflected_color = trace_ray(&p, &R, EPSILON, f32::INFINITY, scene, recursion_depth - 1);
+
+    local_color * (1.0 - r)  +  reflected_color * r
 }
 
 fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 {
@@ -143,7 +159,7 @@ fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 
         }
 
         // Shadow check
-        let option = closest_intersection(p, &l, RENDERER_EPSILON, t_max, &scene.spheres);
+        let option = closest_intersection(p, &l, EPSILON, t_max, &scene.spheres);
         if option.is_some() {
             continue;
         }
@@ -164,5 +180,10 @@ fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 
                 i += intens * (r_dot_v / (r.length() * v.length())).powf(s);
             }
         }
-    }i
+    }
+    i
+}
+
+fn reflect_ray(r: &Vec3, n: &Vec3) -> Vec3 {
+    2.0 * n * n.dot(r)  -  r
 }

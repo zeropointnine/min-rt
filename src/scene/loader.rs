@@ -85,7 +85,7 @@ fn make_specs(doc: &Yaml) -> Option<Specs> {
     Some(specs)
 }
 
-fn make_lights(doc: &Yaml) -> Option<Vec::<Light>> {
+fn make_lights(doc: &Yaml) -> Option<Vec<Light>> {
     let lights = &doc["lights"];
     if !lights.is_array() {
         return None;
@@ -131,7 +131,7 @@ fn make_light(light: &Yaml) -> Option<Light> {
     None
 }
 
-fn make_objects(doc: &Yaml) -> Option<Vec::<Sphere>> {
+fn make_objects(doc: &Yaml) -> Option<Vec<Sphere>> {
     let objects = &doc["objects"];
     if !objects.is_array() {
         return None;
@@ -160,7 +160,8 @@ fn make_object(object: &Yaml) -> Option<Sphere> {
         let color = sphere["color"].as_vec()?;
         let color = make_color(color)?;
         let specular = sphere["specular"].as_f64()? as f32;
-        let result = Some(Sphere { center, radius, color, specular });
+        let reflective = sphere["reflective"].as_f64()? as f32;
+        let result = Some(Sphere { center, radius, color, specular, reflective });
         return result;
     }
     None

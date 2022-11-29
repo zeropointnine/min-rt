@@ -13,3 +13,7 @@ reorganize folder/mod hierarchy
     move windowed functionality into its own folder, with cargo subproject
     consider making into a library proper with examples
 
+camera object with position and orientation info
+    orientation abstraction object generally. and revisit quats, oF.
+
+sphere::new - factory fn's like this that have no logic and many params add little value, remove

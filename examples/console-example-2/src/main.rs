@@ -3,21 +3,22 @@ use std::{thread, time};
 use std::time::Instant;
 use device_query::{DeviceQuery, DeviceState, Keycode};
 use min_rt::base::color::Color;
-use min_rt::scene;
+use min_rt::{scene, util};
 use min_rt::canvas::console_composite_canvas::ConsoleCompositeCanvas;
 use min_rt::scene::renderer;
 use min_rt::scene::scene::{Light, Scene};
 use min_rt::util::ansi;
 
-static MS_PER_FRAME: i64 = 33;
-static TIME_INCREMENT: f32 = 1.0;
+const MS_PER_FRAME: i64 = 33;
+const TIME_INCREMENT: f32 = 1.0;
 
 fn main() {
 
     let device_state = DeviceState::new();
 
     // Load scene using yaml config file
-    let mut scene = scene::loader::load("scene1.yaml").unwrap();
+    let path = util::file::find_file_starting_from_cwd("scene1.yaml").unwrap();
+    let mut scene = scene::loader::load(&path).unwrap();
 
     // Adjust pixel aspect ratio because terminal
     scene.specs.pixel_ar = 0.40;
@@ -70,13 +71,13 @@ fn main() {
 }
 
 /// Adds some rudimentary movement for fun
-fn update_scene(scene: &mut Scene, time: f32) {
+fn update_scene(scene: &mut Scene, time: f32) { return;
     // light
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
         let radians = (f32::consts::PI / 180.0) * (time * 2.5);
         position.x = 2.0 + (radians.sin() * 3.0);
-        position.z = -1.0 + (radians.cos() * 3.0);
+        position.z = -3.0 + (radians.cos() * 3.0);
     }
     // sphere pos
     let mut pos = &mut scene.spheres[0].center;

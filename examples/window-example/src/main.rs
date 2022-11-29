@@ -5,16 +5,17 @@ use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{WindowBuilder};
 use winit_input_helper::WinitInputHelper;
+use min_rt::base::color::Color;
 use min_rt::canvas::u8_canvas::U8Canvas;
-use min_rt::scene;
+use min_rt::{scene, util};
 use min_rt::scene::renderer;
 use min_rt::scene::scene::{Light, Scene};
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
-static TIME_INCREMENT: f32 = 5.0;
+const TIME_INCREMENT: f32 = 5.0;
 
-/// Based on pixels sample program
+/// Window setup and event loop based on pixels sample program
 /// https://github.com/parasyte/pixels/tree/main/examples/minimal-winit
 ///
 fn main() -> Result<(), Error> {
@@ -26,7 +27,7 @@ fn main() -> Result<(), Error> {
     let window = {
         let size = LogicalSize::new(WIDTH as f64, HEIGHT as f64);
         WindowBuilder::new()
-            .with_title("Rust Raytracer")
+            .with_title("window-example")
             .with_inner_size(size)
             .with_min_inner_size(size)
             .build(&event_loop)
@@ -40,7 +41,9 @@ fn main() -> Result<(), Error> {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture)?
     };
 
-    let mut scene = scene::loader::load("scene1.yaml").unwrap();
+    let path = util::file::find_file_starting_from_cwd("scene1.yaml").unwrap();
+    let mut scene = scene::loader::load(&path).unwrap();
+
     let mut canvas = U8Canvas::new(WIDTH, HEIGHT);
 
     let mut is_scene_dirty = true;
@@ -91,12 +94,12 @@ fn main() -> Result<(), Error> {
 }
 
 fn update_scene(scene: &mut Scene, time: f32) {
-    // light
+    // light [2.0, 1.0, 0.0]
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
         let radians = (f32::consts::PI / 180.0) * (time * 2.5);
         position.x = 2.0 + (radians.sin() * 3.0);
-        position.z = -1.0 + (radians.cos() * 3.0);
+        position.z = -3.0 + (radians.cos() * 3.0);
     }
     // sphere pos
     let mut pos = &mut scene.spheres[0].center;

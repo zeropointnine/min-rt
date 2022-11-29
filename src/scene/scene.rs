@@ -36,9 +36,6 @@ pub struct Specs {
 
     /// Background color
     pub background_color: Color
-
-    // todo camera object with position and orientation info
-    // todo orientation abstraction object generally. and revisit quats, oF.
 }
 
 impl Specs {
@@ -63,12 +60,13 @@ pub struct Sphere {
     pub center: Vec3,
     pub radius: f32,
     pub color: Color,
-    pub specular: f32
+    pub specular: f32,
+    pub reflective: f32
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, color: Color, specular: f32) -> Sphere {
-        Sphere { center, radius, color, specular }
+    pub fn new(center: Vec3, radius: f32, color: Color, specular: f32, reflective: f32) -> Sphere {
+        Sphere { center, radius, color, specular, reflective }
     }
 }
 

@@ -104,7 +104,7 @@ impl Vec3 {
 /// Operator overloads
 /// todo cover all possible permutations :/
 
-/// lhs = &Vec3, rhs = &Vec3
+/// &Vec3 &Vec3
 impl ops::Add<&Vec3> for &Vec3 {
     type Output = Vec3;
     fn add(self, rhs: &Vec3) -> Vec3 {
@@ -126,7 +126,23 @@ impl ops::Mul<&Vec3> for &Vec3 {
     }
 }
 
-/// lhs = &Vec3, rhs = Vec3
+/// &Vec3 f32
+impl ops::Mul<f32> for &Vec3 {
+    type Output = Vec3;
+    fn mul(self, rhs: f32) -> Vec3 {
+        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
+/// f32 &Vec
+impl ops::Mul<&Vec3> for f32 {
+    type Output = Vec3;
+    fn mul(self, rhs: &Vec3) -> Vec3 {
+        Vec3::new(self * rhs.x, self * rhs.y, self * rhs.z)
+    }
+}
+
+/// &Vec3 Vec3
 impl ops::Add<Vec3> for &Vec3 {
     type Output = Vec3;
     fn add(self, rhs: Vec3) -> Vec3 {
@@ -134,19 +150,20 @@ impl ops::Add<Vec3> for &Vec3 {
     }
 }
 
-/// lhs = Vec3, rhs = Vec3
-impl ops::Sub<Vec3> for Vec3 {
+/// Vec3 &Vec3
+impl ops::Sub<&Vec3> for Vec3 {
     type Output = Vec3;
-    fn sub(self, rhs: Vec3) -> Vec3 {
+    fn sub(self, rhs: &Vec3) -> Vec3 {
         Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
 
-/// lhs = &Vec3, rhs = f32
-impl ops::Mul<f32> for &Vec3 {
+
+/// Vec3 Vec3
+impl ops::Sub<Vec3> for Vec3 {
     type Output = Vec3;
-    fn mul(self, rhs: f32) -> Vec3 {
-        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    fn sub(self, rhs: Vec3) -> Vec3 {
+        Vec3::new(self.x - rhs.x, self.y - rhs.y, self.z - rhs.z)
     }
 }
 
@@ -157,14 +174,20 @@ impl ops::Neg for &Vec3 {
     }
 }
 
-/// lhs = Vec3, rhs = f32
+/// Vec3 f32
+impl ops::Mul<f32> for Vec3 {
+    type Output = Vec3;
+    fn mul(self, rhs: f32) -> Vec3 {
+        Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
+    }
+}
+
 impl ops::Div<f32> for Vec3 {
     type Output = Vec3;
     fn div(self, rhs: f32) -> Vec3 {
         Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }
-
 
 
 
