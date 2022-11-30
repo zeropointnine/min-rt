@@ -61,12 +61,12 @@ pub fn load(filepath: &str) -> Option<Scene> {
 fn make_specs(doc: &Yaml) -> Option<Specs> {
     let specs = &doc["specs"];
 
-    let viewport_width = specs["viewport_width"].as_f64()? as f32;
-    let viewport_height = specs["viewport_height"].as_f64()? as f32;
-    let viewport_distance = specs["viewport_distance"].as_f64()? as f32;
-    let canvas_width = specs["canvas_width"].as_f64()? as f32;
-    let canvas_height = specs["canvas_height"].as_f64()? as f32;
-    let pixel_ar = specs["pixel_ar"].as_f64()? as f32;
+    let viewport_width = specs["viewport_width"].as_f64()?;
+    let viewport_height = specs["viewport_height"].as_f64()?;
+    let viewport_distance = specs["viewport_distance"].as_f64()?;
+    let canvas_width = specs["canvas_width"].as_f64()?;
+    let canvas_height = specs["canvas_height"].as_f64()?;
+    let pixel_ar = specs["pixel_ar"].as_f64()?;
     let camera_pos = specs["camera_pos"].as_vec()?;
     let camera_pos = make_vec3(camera_pos)?;
     let background_color = specs["background_color"].as_vec()?;
@@ -108,13 +108,13 @@ fn make_light(light: &Yaml) -> Option<Light> {
 
     let ambient_light = &light["ambient"];
     if let Some(_) = ambient_light.as_hash() {
-        let intensity = ambient_light["intensity"].as_f64()? as f32;
+        let intensity = ambient_light["intensity"].as_f64()?;
         let result = Some(Light::Ambient { intensity });
         return result;
     }
     let point_light = &light["point"];
     if let Some(_) = point_light.as_hash() {
-        let intensity = point_light["intensity"].as_f64()? as f32;
+        let intensity = point_light["intensity"].as_f64()?;
         let position = point_light["position"].as_vec()?;
         let position = make_vec3(position)?;
         let result = Some(Light::Point { intensity, position });
@@ -122,7 +122,7 @@ fn make_light(light: &Yaml) -> Option<Light> {
     }
     let directional_light = &light["directional"];
     if let Some(_) = directional_light.as_hash() {
-        let intensity = directional_light["intensity"].as_f64()? as f32;
+        let intensity = directional_light["intensity"].as_f64()?;
         let direction = directional_light["direction"].as_vec()?;
         let direction = make_vec3(direction)?;
         let result = Some(Light::Directional { intensity, direction });
@@ -156,11 +156,11 @@ fn make_object(object: &Yaml) -> Option<Sphere> {
     if let Some(_) = sphere.as_hash() {
         let center = sphere["center"].as_vec()?;
         let center = make_vec3(center)?;
-        let radius = sphere["radius"].as_f64()? as f32;
+        let radius = sphere["radius"].as_f64()?;
         let color = sphere["color"].as_vec()?;
         let color = make_color(color)?;
-        let specular = sphere["specular"].as_f64()? as f32;
-        let reflective = sphere["reflective"].as_f64()? as f32;
+        let specular = sphere["specular"].as_f64()?;
+        let reflective = sphere["reflective"].as_f64()?;
         let result = Some(Sphere { center, radius, color, specular, reflective });
         return result;
     }
@@ -171,9 +171,9 @@ fn make_vec3(array: &Array) -> Option<Vec3> {
     if array.len() != 3 {
         return None;
     }
-    let x = array[0].as_f64()? as f32;
-    let y = array[1].as_f64()? as f32;
-    let z = array[2].as_f64()? as f32;
+    let x = array[0].as_f64()?;
+    let y = array[1].as_f64()?;
+    let z = array[2].as_f64()?;
     Some(Vec3 { x, y, z})
 }
 
@@ -184,5 +184,5 @@ fn make_color(array: &Array) -> Option<Color> {
     let r = array[0].as_i64()? as u8;
     let g = array[1].as_i64()? as u8;
     let b = array[2].as_i64()? as u8;
-    Some(Color::new(r, g, b))
+    Some(Color::from_u8(r, g, b))
 }

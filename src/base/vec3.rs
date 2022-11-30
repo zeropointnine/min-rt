@@ -5,19 +5,19 @@ use std::ops;
 ///
 #[derive(Clone, Copy, Debug)]
 pub struct Vec3 {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32
+    pub x: f64,
+    pub y: f64,
+    pub z: f64
 }
 
 impl Vec3 {
 
-    pub fn new(x: f32, y: f32, z: f32) -> Vec3 {
+    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
         Vec3 { x, y, z }
     }
 
     pub fn new_origin() -> Vec3 {
-        Vec3 { x: 0_f32, y: 0_f32, z: 0_f32 }
+        Vec3 { x: 0_f64, y: 0_f64, z: 0_f64 }
     }
 
     pub fn add(&mut self, b: &Vec3) {
@@ -68,16 +68,16 @@ impl Vec3 {
         }
     }
 
-    pub fn dot(&self, b: &Vec3) -> f32 {
+    pub fn dot(&self, b: &Vec3) -> f64 {
         self.x * b.x + self.y * b.y + self.z * b.z
     }
 
-    pub fn length(&self) -> f32 {
+    pub fn length(&self) -> f64 {
         self.dot(self).sqrt()
     }
 
     // Untested
-    pub fn get_rotated(&self, radians: f32, axis: &Vec3) -> Vec3 {
+    pub fn get_rotated(&self, radians: f64, axis: &Vec3) -> Vec3 {
         let ax = axis.get_normalized();
         let a = radians;
         let sina = a.sin();
@@ -126,16 +126,16 @@ impl ops::Mul<&Vec3> for &Vec3 {
     }
 }
 
-/// &Vec3 f32
-impl ops::Mul<f32> for &Vec3 {
+/// &Vec3 f64
+impl ops::Mul<f64> for &Vec3 {
     type Output = Vec3;
-    fn mul(self, rhs: f32) -> Vec3 {
+    fn mul(self, rhs: f64) -> Vec3 {
         Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
-/// f32 &Vec
-impl ops::Mul<&Vec3> for f32 {
+/// f64 &Vec
+impl ops::Mul<&Vec3> for f64 {
     type Output = Vec3;
     fn mul(self, rhs: &Vec3) -> Vec3 {
         Vec3::new(self * rhs.x, self * rhs.y, self * rhs.z)
@@ -174,17 +174,17 @@ impl ops::Neg for &Vec3 {
     }
 }
 
-/// Vec3 f32
-impl ops::Mul<f32> for Vec3 {
+/// Vec3 f64
+impl ops::Mul<f64> for Vec3 {
     type Output = Vec3;
-    fn mul(self, rhs: f32) -> Vec3 {
+    fn mul(self, rhs: f64) -> Vec3 {
         Vec3::new(self.x * rhs, self.y * rhs, self.z * rhs)
     }
 }
 
-impl ops::Div<f32> for Vec3 {
+impl ops::Div<f64> for Vec3 {
     type Output = Vec3;
-    fn div(self, rhs: f32) -> Vec3 {
+    fn div(self, rhs: f64) -> Vec3 {
         Vec3::new(self.x / rhs, self.y / rhs, self.z / rhs)
     }
 }
@@ -195,7 +195,7 @@ impl ops::Div<f32> for Vec3 {
 
 /// Given a ray that starts at `r1` and goes through `r2`,
 /// get the point on the ray that is distance `t` from `r1`
-pub fn get_point_on_ray(r1: &Vec3, r2: &Vec3, t: f32) -> Vec3 {
+pub fn get_point_on_ray(r1: &Vec3, r2: &Vec3, t: f64) -> Vec3 {
     let dir = r2 - r1;
     let ratio = t / dir.length();
     let mut dir = &dir * ratio;

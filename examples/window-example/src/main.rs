@@ -1,11 +1,10 @@
-use std::f32;
+use std::f64;
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{WindowBuilder};
 use winit_input_helper::WinitInputHelper;
-use min_rt::base::color::Color;
 use min_rt::canvas::u8_canvas::U8Canvas;
 use min_rt::{scene, util};
 use min_rt::scene::renderer;
@@ -13,7 +12,7 @@ use min_rt::scene::scene::{Light, Scene};
 
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
-const TIME_INCREMENT: f32 = 5.0;
+const TIME_INCREMENT: f64 = 5.0;
 
 /// Window setup and event loop based on pixels sample program
 /// https://github.com/parasyte/pixels/tree/main/examples/minimal-winit
@@ -47,7 +46,7 @@ fn main() -> Result<(), Error> {
     let mut canvas = U8Canvas::new(WIDTH, HEIGHT);
 
     let mut is_scene_dirty = true;
-    let mut time = 0_f32;
+    let mut time = 0_f64;
 
     event_loop.run(move |event, _, control_flow| {
 
@@ -93,16 +92,16 @@ fn main() -> Result<(), Error> {
     });
 }
 
-fn update_scene(scene: &mut Scene, time: f32) {
+fn update_scene(scene: &mut Scene, time: f64) {
     // light [2.0, 1.0, 0.0]
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
-        let radians = (f32::consts::PI / 180.0) * (time * 2.5);
+        let radians = (f64::consts::PI / 180.0) * (time * 2.5);
         position.x = 2.0 + (radians.sin() * 3.0);
         position.z = -3.0 + (radians.cos() * 3.0);
     }
     // sphere pos
     let mut pos = &mut scene.spheres[0].center;
-    let radians = (f32::consts::PI / 180.0) * (time * 1.25);
+    let radians = (f64::consts::PI / 180.0) * (time * 1.25);
     pos.y = -1.0 + (radians.sin() * 1.0);
 }

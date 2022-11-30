@@ -4,7 +4,7 @@ use crate::base::vec3::Vec3;
 use crate::canvas::canvas::Canvas;
 use crate::util::maths;
 
-const EPSILON: f32 = 0.001;
+const EPSILON: f64 = 0.001;
 const RECURSION_DEPTH: usize = 3;
 
 /// Logic for rendering a `Scene`` onto a `Canvas`
@@ -24,7 +24,7 @@ pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
 
     let specs = &scene.specs;
 
-    let canvas_grid_ar = canvas.get_width() as f32 / canvas.get_height() as f32;
+    let canvas_grid_ar = canvas.get_width() as f64 / canvas.get_height() as f64;
 
     // Account for pixel aspect ratio (viz., for terminal text output)
     let adjusted_viewport_width= specs.viewport_width * specs.pixel_ar;
@@ -37,11 +37,11 @@ pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
 
     for iy in 0..steps_y {
 
-        let mut y = maths::map(iy as f32, steps_y as f32, 0.0, -half_canvas_height, half_canvas_height);
+        let mut y = maths::map(iy as f64, steps_y as f64, 0.0, -half_canvas_height, half_canvas_height);
 
         for ix in 0..steps_x {
 
-            let mut x = maths::map(ix as f32, 0.0, steps_x as f32, -half_canvas_width, half_canvas_width);
+            let mut x = maths::map(ix as f64, 0.0, steps_x as f64, -half_canvas_width, half_canvas_width);
 
             x *= adjusted_viewport_width / specs.canvas_width;
             x *= canvas_grid_ar; // Account for canvas grid size
@@ -49,21 +49,21 @@ pub fn render_scene_to_canvas(scene: &Scene, canvas: &mut dyn Canvas<Color>) {
             let d = canvas_to_viewport(x, y, &scene.specs);
 
             let o = &specs.camera_pos;
-            let color = trace_ray(o, &d, 1.0, f32::INFINITY, &scene, RECURSION_DEPTH);
+            let color = trace_ray(o, &d, 1.0, f64::INFINITY, &scene, RECURSION_DEPTH);
             canvas.set_value(ix, iy, &color);
         }
     }
 }
 
 /// Don't understand how the canvas width and height properties are useful, but
-fn canvas_to_viewport(x: f32, y: f32, specs: &Specs) -> Vec3 {
+fn canvas_to_viewport(x: f64, y: f64, specs: &Specs) -> Vec3 {
     let x = x * specs.viewport_width / specs.canvas_width;
     let y = y * specs.viewport_height / specs.canvas_height;
     Vec3::new(x, y, specs.viewport_distance)
 }
 
 /// Returns the two 'distances' on a ray where it intersects a sphere.
-fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f32, f32) {
+fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f64, f64) {
     let r = sphere.radius;
     let c0 = o - &sphere.center;
     let a = d.dot(d);
@@ -72,7 +72,7 @@ fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f32, f32) {
 
     let discriminant = b * b  -  4.0 * a * c;
     if discriminant < 0.0 {
-        return (f32::NEG_INFINITY, f32::NEG_INFINITY);
+        return (f64::NEG_INFINITY, f64::NEG_INFINITY);
     }
 
     let t1 = (-b + discriminant.sqrt()) / (2.0 * a);
@@ -81,9 +81,9 @@ fn intersect_ray_sphere(o: &Vec3, d: &Vec3, sphere: &Sphere) -> (f32, f32) {
 }
 
 /// Returns sphere index and closest_t // return borrowed sphere reference rather than index?
-fn closest_intersection(o: &Vec3, d: &Vec3, t_min:f32 , t_max: f32, spheres: &Vec<Sphere>) -> Option<(usize, f32)> {
+fn closest_intersection(o: &Vec3, d: &Vec3, t_min:f64 , t_max: f64, spheres: &Vec<Sphere>) -> Option<(usize, f64)> {
 
-    let mut closest_t = f32::INFINITY;
+    let mut closest_t = f64::INFINITY;
     let mut closest_sphere_index: Option<usize> = None;
     for (i, sphere) in spheres.iter().enumerate() {
         let (t1, t2) = intersect_ray_sphere(o, d, &sphere);
@@ -102,7 +102,7 @@ fn closest_intersection(o: &Vec3, d: &Vec3, t_min:f32 , t_max: f32, spheres: &Ve
     }
 }
 
-fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, scene: &Scene, recursion_depth: usize) -> Color {
+fn trace_ray(o: &Vec3, d: &Vec3, t_min: f64, t_max: f64, scene: &Scene, recursion_depth: usize) -> Color {
 
     let option = closest_intersection(o, d, t_min, t_max, &scene.spheres);
     if option.is_none() {
@@ -126,12 +126,12 @@ fn trace_ray(o: &Vec3, d: &Vec3, t_min: f32, t_max: f32, scene: &Scene, recursio
 
     // Compute the reflected color
     let R = reflect_ray(&-d, &n);
-    let reflected_color = trace_ray(&p, &R, EPSILON, f32::INFINITY, scene, recursion_depth - 1);
+    let reflected_color = trace_ray(&p, &R, EPSILON, f64::INFINITY, scene, recursion_depth - 1);
 
     local_color * (1.0 - r)  +  reflected_color * r
 }
 
-fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 {
+fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f64, scene: &Scene) -> f64 {
 
     let mut i = 0.0;
 
@@ -139,7 +139,7 @@ fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 
 
         let l: Vec3;
         let t_max;
-        let intens: f32;
+        let intens: f64;
 
         match light {
             Light::Ambient { intensity } => {
@@ -153,7 +153,7 @@ fn compute_lighting(p: &Vec3, n: &Vec3, v: &Vec3, s: f32, scene: &Scene) -> f32 
             },
             Light::Directional { intensity, direction } => {
                 l = direction.clone();
-                t_max = f32::INFINITY;
+                t_max = f64::INFINITY;
                 intens = *intensity;
             }
         }

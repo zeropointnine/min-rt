@@ -1,4 +1,4 @@
-use std::f32;
+use std::f64;
 use std::{thread, time};
 use std::time::Instant;
 use device_query::{DeviceQuery, DeviceState, Keycode};
@@ -10,7 +10,7 @@ use min_rt::scene::scene::{Light, Scene};
 use min_rt::util::ansi;
 
 const MS_PER_FRAME: i64 = 33;
-const TIME_INCREMENT: f32 = 1.0;
+const TIME_INCREMENT: f64 = 1.0;
 
 fn main() {
 
@@ -27,7 +27,7 @@ fn main() {
     let mut canvas = make_canvas_using_term_size();
 
     // Start the render loop
-    let mut time = 0_f32;
+    let mut time = 0_f64;
     loop {
         let start = Instant::now();
 
@@ -71,23 +71,23 @@ fn main() {
 }
 
 /// Adds some rudimentary movement for fun
-fn update_scene(scene: &mut Scene, time: f32) {
+fn update_scene(scene: &mut Scene, time: f64) {
     // light
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
-        let radians = (f32::consts::PI / 180.0) * (time * 2.5);
+        let radians = (f64::consts::PI / 180.0) * (time * 2.5);
         position.x = 2.0 + (radians.sin() * 3.0);
         position.z = -3.0 + (radians.cos() * 3.0);
     }
     // sphere pos
     let mut pos = &mut scene.spheres[0].center;
-    let radians = (f32::consts::PI / 180.0) * (time * 1.25);
+    let radians = (f64::consts::PI / 180.0) * (time * 1.25);
     pos.y = -1.0 + (radians.sin() * 1.0);
 }
 
 fn make_canvas_using_term_size() -> ConsoleCompositeCanvas {
     let (width, height) = get_terminal_size();
-    ConsoleCompositeCanvas::new(width, height, Color::new(255, 128, 128))
+    ConsoleCompositeCanvas::new(width, height, Color::from_u8(255, 128, 128))
 }
 
 fn get_terminal_size() -> (usize, usize) {

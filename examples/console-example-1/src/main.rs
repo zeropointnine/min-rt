@@ -9,13 +9,13 @@ fn main() {
 
     // Make the canvas onto which the scene will be rendered
     let mut canvas
-        = ConsoleCompositeCanvas::new(80, 40, Color::new(255, 64, 64));
+        = ConsoleCompositeCanvas::new(80, 40, Color::from_u8(255, 64, 64));
 
     // Construct a minimal scene programmatically
     let scene = {
         let mut specs = Specs::new_with_defaults();
         specs.pixel_ar = 0.40; // tall pixel aspect ratio because terminal
-        specs.background_color.set(0, 0, 0);
+        specs.background_color.set(0.0, 0.0, 0.0);
 
         let light = Light::Ambient { intensity: 1.0 };
         let mut lights = Vec::<Light>::new();
@@ -24,8 +24,9 @@ fn main() {
         let sphere = Sphere::new(
             Vec3::new(0.0, 0.0, 3.0),
             1.0,
-            Color::new(255, 0, 0),
-            500.0);
+            Color::from_u8(255, 0, 0),
+            500.0,
+            -1.0);
         let mut spheres = Vec::<Sphere>::new();
         spheres.push(sphere);
 

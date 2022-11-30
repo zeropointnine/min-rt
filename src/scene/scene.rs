@@ -16,20 +16,20 @@ pub struct Scene {
 #[derive(Debug)]
 pub struct Specs {
     /// Canvas dimensions in world units (unclear about how this is useful tbh)
-    pub canvas_width: f32,
-    pub canvas_height: f32,
+    pub canvas_width: f64,
+    pub canvas_height: f64,
 
     /// Viewport dimensions in world units
-    pub viewport_width: f32,
-    pub viewport_height: f32,
+    pub viewport_width: f64,
+    pub viewport_height: f64,
 
     /// Distance from camera to viewport
-    pub viewport_distance: f32,
+    pub viewport_distance: f64,
 
     /// Aspect ratio of a pixel. This would conventionally be 1.0.
     /// If outputting text to the terminal, would be font-dependent,
     /// in the neighborhood of ~0.6 to ~0.8.
-    pub pixel_ar: f32,
+    pub pixel_ar: f64,
 
     /// Camera position
     pub camera_pos: Vec3,
@@ -48,7 +48,7 @@ impl Specs {
             viewport_distance: 1.0,
             pixel_ar: 1.0,
             camera_pos: Vec3::new_origin(),
-            background_color: Color::new(255, 255, 255)
+            background_color: Color::new_black()
         }
     }
 }
@@ -58,21 +58,21 @@ impl Specs {
 #[derive(Clone, Copy, Debug)]
 pub struct Sphere {
     pub center: Vec3,
-    pub radius: f32,
+    pub radius: f64,
     pub color: Color,
-    pub specular: f32,
-    pub reflective: f32
+    pub specular: f64,
+    pub reflective: f64
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f32, color: Color, specular: f32, reflective: f32) -> Sphere {
+    pub fn new(center: Vec3, radius: f64, color: Color, specular: f64, reflective: f64) -> Sphere {
         Sphere { center, radius, color, specular, reflective }
     }
 }
 
 #[derive(Clone, Copy, Debug)]
 pub enum Light {
-    Ambient { intensity: f32 },
-    Point { intensity: f32, position: Vec3 },
-    Directional { intensity: f32, direction: Vec3 }
+    Ambient { intensity: f64 },
+    Point { intensity: f64, position: Vec3 },
+    Directional { intensity: f64, direction: Vec3 }
 }

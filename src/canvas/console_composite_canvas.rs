@@ -19,7 +19,7 @@ pub struct ConsoleCompositeCanvas {
 impl ConsoleCompositeCanvas {
 
     pub fn new(width: usize, height: usize, text_color: Color) -> ConsoleCompositeCanvas {
-        let colors = VectorCanvas::<Color>::new(width, height, Color::new(0,0,0));
+        let colors = VectorCanvas::<Color>::new(width, height, Color::new_black());
         let chars = VectorCanvas::<char>::new(width, height, ' ');
         ConsoleCompositeCanvas { width, height, colors, chars, text_color }
     }
@@ -63,7 +63,8 @@ impl ConsoleCompositeCanvas {
         // Instead, we'll just be overwriting everything that may already be on screen.
         print!("{}", ansi::move_cursor(0, 0));
 
-        print!("{}", ansi::foreground_color(self.text_color.r, self.text_color.g, self.text_color.b));
+        let (r, g, b) = self.text_color.to_u8();
+        print!("{}", ansi::foreground_color(r, g, b));
 
         for iy in 0..self.height {
 
@@ -72,7 +73,8 @@ impl ConsoleCompositeCanvas {
             for ix in 0..self.width {
                 // Add ANSI background color command
                 let color = self.colors.get_value(ix, iy);
-                let code = ansi::background_color(color.r, color.g, color.b);
+                let (r, g, b) = color.to_u8();
+                let code = ansi::background_color(r, g, b);
                 row_text += &code;
                 // Add the literal character
                 let char = self.chars.get_value(ix, iy);
