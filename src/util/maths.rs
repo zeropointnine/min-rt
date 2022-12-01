@@ -1,6 +1,6 @@
-pub fn map(value: f64, value_min: f64, value_max: f64, new_min: f64, new_max: f64) -> f64 {
+pub fn map(value: f64, value_min: f64, value_max: f64, dest_min: f64, dest_max: f64) -> f64 {
     let ratio = (value - value_min) / (value_max - value_min);
-    new_min + (new_max - new_min) * ratio
+    dest_min + (dest_max - dest_min) * ratio
 }
 
 pub fn clamp<T: PartialOrd>(value: T, min: T, max: T) -> T {

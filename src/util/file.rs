@@ -2,7 +2,6 @@ use std::path::PathBuf;
 
 /// Recursively goes up the file tree starting at `dir_path`,
 /// looking for file named `target_file_name`.
-///
 pub fn find_file_starting_from(dir_path: &PathBuf, target_file_name: &str) -> Option<PathBuf> {
 
     if !dir_path.is_dir() {
@@ -25,9 +24,8 @@ pub fn find_file_starting_from(dir_path: &PathBuf, target_file_name: &str) -> Op
     return find_file_starting_from(&dir_path, &target_file_name);
 }
 
-/// Useful for finding file in rust project root dir due uncertainty of cwd during development
-/// (based on what executable is being launched or by what means)
-///
+/// Useful for finding file in rust project root dir during development (since cwd may or may not
+/// be nested within the project based on how or which the executable is launched).
 pub fn find_file_starting_from_cwd(target_file_name: &str) -> Option<String> {
     let cwd = &std::env::current_dir().ok()?;
     let path = find_file_starting_from(cwd, target_file_name)?;

@@ -43,11 +43,6 @@ impl<T:Clone> Canvas<T> for VectorCanvas<T> {
         let i = self.get_flat_index(x, y);
         self.vector[i] = value.clone();
     }
-
-    // pub fn as_any(&self) -> &dyn Any {
-    //     self
-    // }
-
 }
 
 

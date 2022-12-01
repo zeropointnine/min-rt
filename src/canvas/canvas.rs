@@ -7,5 +7,4 @@ pub trait Canvas<T:Clone> {
     fn get_height(&self) -> usize;
     fn get_value(&self, x: usize, y: usize) -> T;
     fn set_value(&mut self, x: usize, y: usize, value: &T);
-    // fn as_any(&self) -> &dyn Any;
 }

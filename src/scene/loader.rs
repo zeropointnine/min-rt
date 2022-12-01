@@ -1,9 +1,9 @@
 use yaml_rust::{YamlLoader, Yaml};
 use std::fs;
+use crate::cgmath::{Quaternion, Vector3};
 use yaml_rust::yaml::Array;
 use crate::base::color::Color;
 use crate::scene::scene::{Light, Scene, Specs, Sphere};
-use crate::base::vec3::Vec3;
 
 pub fn load(filepath: &str) -> Option<Scene> {
 
@@ -69,6 +69,8 @@ fn make_specs(doc: &Yaml) -> Option<Specs> {
     let pixel_ar = specs["pixel_ar"].as_f64()?;
     let camera_pos = specs["camera_pos"].as_vec()?;
     let camera_pos = make_vec3(camera_pos)?;
+    let camera_orientation = specs["camera_orientation"].as_vec()?;
+    let camera_orientation: Quaternion<f64> = make_quat(&camera_orientation)?;
     let background_color = specs["background_color"].as_vec()?;
     let background_color = make_color(background_color)?;
 
@@ -80,6 +82,7 @@ fn make_specs(doc: &Yaml) -> Option<Specs> {
         viewport_distance,
         pixel_ar,
         camera_pos,
+        camera_orientation,
         background_color,
     };
     Some(specs)
@@ -167,14 +170,25 @@ fn make_object(object: &Yaml) -> Option<Sphere> {
     None
 }
 
-fn make_vec3(array: &Array) -> Option<Vec3> {
+fn make_vec3(array: &Array) -> Option<Vector3<f64>> {
     if array.len() != 3 {
         return None;
     }
     let x = array[0].as_f64()?;
     let y = array[1].as_f64()?;
     let z = array[2].as_f64()?;
-    Some(Vec3 { x, y, z})
+    Some(Vector3::<f64>::new(x, y, z))
+}
+
+fn make_quat(array: &Array) -> Option<Quaternion<f64>> {
+    if array.len() != 4 {
+        return None;
+    }
+    let w = array[0].as_f64()?;
+    let x = array[1].as_f64()?;
+    let y = array[2].as_f64()?;
+    let z = array[3].as_f64()?;
+    Some(Quaternion::<f64>::new(w, x, y, z))
 }
 
 fn make_color(array: &Array) -> Option<Color> {

@@ -1,4 +1,4 @@
-use crate::base::vec3::Vec3;
+use crate::cgmath::{Quaternion, Vector3};
 use crate::base::color::Color;
 
 /// Simple data structure of the objects for a 3d scene, including lights.
@@ -31,11 +31,12 @@ pub struct Specs {
     /// in the neighborhood of ~0.6 to ~0.8.
     pub pixel_ar: f64,
 
-    /// Camera position
-    pub camera_pos: Vec3,
+    /// Camera
+    pub camera_pos: Vector3<f64>,
+    pub camera_orientation: Quaternion<f64>,
 
     /// Background color
-    pub background_color: Color
+    pub background_color: Color,
 }
 
 impl Specs {
@@ -47,8 +48,9 @@ impl Specs {
             viewport_height: 1.0,
             viewport_distance: 1.0,
             pixel_ar: 1.0,
-            camera_pos: Vec3::new_origin(),
-            background_color: Color::new_black()
+            camera_pos: Vector3::<f64>::new(0.0, 0.0, 0.0),
+            camera_orientation: Quaternion::<f64>::new(1.0, 0.0, 0.0, 0.0),
+            background_color: Color::new_black(),
         }
     }
 }
@@ -57,7 +59,7 @@ impl Specs {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Sphere {
-    pub center: Vec3,
+    pub center: Vector3<f64>,
     pub radius: f64,
     pub color: Color,
     pub specular: f64,
@@ -65,7 +67,7 @@ pub struct Sphere {
 }
 
 impl Sphere {
-    pub fn new(center: Vec3, radius: f64, color: Color, specular: f64, reflective: f64) -> Sphere {
+    pub fn new(center: Vector3<f64>, radius: f64, color: Color, specular: f64, reflective: f64) -> Sphere {
         Sphere { center, radius, color, specular, reflective }
     }
 }
@@ -73,6 +75,6 @@ impl Sphere {
 #[derive(Clone, Copy, Debug)]
 pub enum Light {
     Ambient { intensity: f64 },
-    Point { intensity: f64, position: Vec3 },
-    Directional { intensity: f64, direction: Vec3 }
+    Point { intensity: f64, position: Vector3<f64> },
+    Directional { intensity: f64, direction: Vector3<f64> }
 }

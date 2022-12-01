@@ -8,20 +8,20 @@ use crate::base::color::Color;
 /// Designed for rendering console output, where each 'character cell' has a bg color and a char.
 /// Uses two `Canvas`'es for this purpose (does not implement `Canvas` directly).
 ///
-pub struct ConsoleCompositeCanvas {
+pub struct ConsoleCanvasMulti {
     pub width: usize,
     pub height: usize,
-    pub colors: VectorCanvas<Color>,
-    pub chars: VectorCanvas<char>,
+    pub colors_canvas: VectorCanvas<Color>,
+    pub chars_canvas: VectorCanvas<char>,
     pub text_color: Color
 }
 
-impl ConsoleCompositeCanvas {
+impl ConsoleCanvasMulti {
 
-    pub fn new(width: usize, height: usize, text_color: Color) -> ConsoleCompositeCanvas {
+    pub fn new(width: usize, height: usize, text_color: Color) -> ConsoleCanvasMulti {
         let colors = VectorCanvas::<Color>::new(width, height, Color::new_black());
         let chars = VectorCanvas::<char>::new(width, height, ' ');
-        ConsoleCompositeCanvas { width, height, colors, chars, text_color }
+        ConsoleCanvasMulti { width, height, colors_canvas: colors, chars_canvas: chars, text_color }
     }
 
     pub fn get_width(&self) -> usize {
@@ -33,7 +33,7 @@ impl ConsoleCompositeCanvas {
     }
 
     pub fn clear_chars(&mut self, char: char) {
-        for item in &mut self.chars.vector {
+        for item in &mut self.chars_canvas.vector {
             *item = char;
         }
     }
@@ -44,13 +44,13 @@ impl ConsoleCompositeCanvas {
         let end_x =  cmp::min(x + string.len(), self.width);
         let num_chars = end_x - x;
 
-        let vector_index = self.chars.get_flat_index(x, y);
+        let vector_index = self.chars_canvas.get_flat_index(x, y);
 
         let mut char_iter = string.chars();
 
         for i in 0..num_chars {
             let char = char_iter.next().unwrap();
-            self.chars.vector[vector_index + i] = char;
+            self.chars_canvas.vector[vector_index + i] = char;
         }
     }
 
@@ -72,12 +72,12 @@ impl ConsoleCompositeCanvas {
 
             for ix in 0..self.width {
                 // Add ANSI background color command
-                let color = self.colors.get_value(ix, iy);
+                let color = self.colors_canvas.get_value(ix, iy);
                 let (r, g, b) = color.to_u8();
                 let code = ansi::background_color(r, g, b);
                 row_text += &code;
                 // Add the literal character
-                let char = self.chars.get_value(ix, iy);
+                let char = self.chars_canvas.get_value(ix, iy);
                 row_text.push(char.clone());
             }
 
