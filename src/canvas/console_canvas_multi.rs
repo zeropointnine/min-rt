@@ -4,10 +4,8 @@ use crate::canvas::vector_canvas::VectorCanvas;
 use crate::util::ansi;
 use crate::base::color::Color;
 
-///
-/// Designed for rendering console output, where each 'character cell' has a bg color and a char.
-/// Uses two `Canvas`'es for this purpose (does not implement `Canvas` directly).
-///
+/// Designed for rendering console output, where each 'character cell' consists of a bg color and a
+/// char. Uses two `Canvas`'es for this purpose. Does not implement `Canvas` directly.
 pub struct ConsoleCanvasMulti {
     pub width: usize,
     pub height: usize,

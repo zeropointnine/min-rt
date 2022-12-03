@@ -5,6 +5,7 @@ use yaml_rust::yaml::Array;
 use crate::base::color::Color;
 use crate::scene::scene::{Light, Scene, Specs, Sphere};
 
+// Constructs a scene by loading its data from a yaml file.
 pub fn load(filepath: &str) -> Option<Scene> {
 
     // Load file as string
@@ -164,7 +165,8 @@ fn make_object(object: &Yaml) -> Option<Sphere> {
         let color = make_color(color)?;
         let specular = sphere["specular"].as_f64()?;
         let reflective = sphere["reflective"].as_f64()?;
-        let result = Some(Sphere { center, radius, color, specular, reflective });
+        let transparency = sphere["transparency"].as_f64()?;
+        let result = Some(Sphere { center, radius, color, specular, reflective, transparency });
         return result;
     }
     None

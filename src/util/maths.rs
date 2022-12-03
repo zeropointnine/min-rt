@@ -24,6 +24,6 @@ pub fn u8_add_clamped(a: u8, b: u8) -> u8 {
 
 
 /// Is value within the given range (inclusive)
-pub fn within(value: f64, min: f64, max: f64) -> bool {
+pub fn contains(value: f64, min: f64, max: f64) -> bool {
     value >= min && value <= max
 }

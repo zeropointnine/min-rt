@@ -1,23 +1,6 @@
-make convenience trait for Quaternion and Vector3 and refactor all?
-and then look into color as well?
-
-
 git exclude intellij files?
 
 for canvases, use vec![]
-
-make multithreaded option
-
-camera position + orientation
-
-consider a render loop abstraction
-
-reorganize folder/mod hierarchy
-    make `util` package
-    move windowed functionality into its own folder, with cargo subproject
-    consider making into a library proper with examples
-
-sphere::new - factory fn's like this that have no logic and many params add little value, remove
 
 renderer -  update function description comments
 renderer - consider making this a trait on Scene. or encapsulated in some other construct

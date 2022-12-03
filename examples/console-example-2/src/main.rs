@@ -22,10 +22,12 @@ fn main() {
 
     // Load scene using yaml config file
     let path = util::file::find_file_starting_from_cwd("scene1.yaml").unwrap();
-    let mut scene = scene::loader::load(&path).expect("Error in scene file");
+    let mut scene = scene::loader::load(&path).expect("Error in scene file, aborting");
     // Adjust pixel aspect ratio because terminal
     scene.specs.pixel_ar = 0.40;
-    // Extra necessary step of wrapping the scene with Arc<RwLock>> for multi-threading purposes
+
+    // Note the extra necessary step of wrapping the scene with Arc<RwLock>>
+    // for multi-threading purposes
     let mut scene = Arc::new(RwLock::new(scene));
 
     // Make the canvas using the terminal's character dimensions
@@ -33,6 +35,7 @@ fn main() {
 
     if !SHOULD_ANIMATE {
         renderer::render_to_canvas_all(&scene, &mut canvas.colors_canvas);
+        canvas.print_to_console();
         return;
     }
 
@@ -83,17 +86,21 @@ fn main() {
 
 /// Adds some rudimentary movement for fun
 fn update_scene(scene: &mut Arc<RwLock<Scene>>, time: f64) {
+
+    // Write-lock and unwrap to gain access to the (mutatable) scene data.
     let mut scene = scene.write().unwrap();
 
-    // sphere pos
+    // sphere position
     let mut pos = &mut scene.spheres[0].center;
-    let radians = (f64::consts::PI / 180.0) * (time * 1.25);
-    pos.y = -1.0 + (radians.sin() * 1.5);
+    pos.y = (time * 1.25).to_radians().sin() * 1.5;
+
+    // sphere transparency
+    scene.spheres[1].transparency = (time * 3.0).to_radians().sin() * 0.3 + 0.7;
 
     // camera position and orientation
-    let radians = (time * 0.66).to_radians();
+    let radians = (time * 0.5).to_radians();
     let x = 0.0 + (radians.sin() * 5.0);
-    let z = 3.0 + (radians.cos() * -4.5);
+    let z = 3.0 + (radians.cos() * -4.0);
     scene.specs.camera_pos.x = x;
     scene.specs.camera_pos.z = z;
     let euler = Euler::<f64>::new(0.0, radians * -0.5, 0.0);

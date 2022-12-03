@@ -63,13 +63,8 @@ pub struct Sphere {
     pub radius: f64,
     pub color: Color,
     pub specular: f64,
-    pub reflective: f64
-}
-
-impl Sphere {
-    pub fn new(center: Vector3<f64>, radius: f64, color: Color, specular: f64, reflective: f64) -> Sphere {
-        Sphere { center, radius, color, specular, reflective }
-    }
+    pub reflective: f64,
+    pub transparency: f64,
 }
 
 #[derive(Clone, Copy, Debug)]

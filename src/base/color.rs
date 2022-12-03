@@ -47,6 +47,10 @@ impl Color {
         let b = (self.b * 255.0) as u8;
         (r, g, b)
     }
+
+    pub fn lerp(a: Color, b: Color, value: f64) -> Color {
+        a * (1.0 - value)  +  b * value
+    }
 }
 
 // operator overloads

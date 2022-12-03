@@ -2,7 +2,7 @@ use std::{f64};
 use std::sync::{Arc, RwLock};
 use pixels::{Error, Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
-use winit::event::{Event, VirtualKeyCode};
+use winit::event::{Event, WindowEvent, VirtualKeyCode};
 use winit::event_loop::{ControlFlow, EventLoop};
 use winit::window::{WindowBuilder};
 use winit_input_helper::WinitInputHelper;
@@ -15,17 +15,22 @@ use min_rt::scene::scene::{Light, Scene};
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
 const TIME_INCREMENT: f64 = 2.0;
-
 const ADVANCE_ON_SPACEBAR_ONLY: bool = false;
 
-/// Window setup and event loop based on pixels sample program
-/// https://github.com/parasyte/pixels/tree/main/examples/minimal-winit
-///
 fn main() -> Result<(), Error> {
 
     if ADVANCE_ON_SPACEBAR_ONLY {
         println!("\r\nPress spacebar to update scene");
     }
+
+    let path = util::file::find_file_starting_from_cwd("scene1.yaml").unwrap();
+    let scene = scene::loader::load(&path).expect("Error in scene file, aborting");
+
+    // Note the extra necessary step of wrapping the scene with Arc<RwLock>>
+    // for multi-threading purposes
+    let mut scene = Arc::new(RwLock::new(scene));
+
+    let mut canvas = U8Canvas::new(WIDTH, HEIGHT);
 
     let event_loop = EventLoop::new();
     let mut input = WinitInputHelper::new();
@@ -46,38 +51,51 @@ fn main() -> Result<(), Error> {
         Pixels::new(WIDTH as u32, HEIGHT as u32, surface_texture)?
     };
 
-    let path = util::file::find_file_starting_from_cwd("scene1.yaml").unwrap();
-    let scene = scene::loader::load(&path).unwrap();
-    // Extra necessary step of wrapping the scene with Arc<RwLock>> for multi-threading purposes
-    let mut scene = Arc::new(RwLock::new(scene));
-
-    let mut canvas = U8Canvas::new(WIDTH, HEIGHT);
-
     let mut is_scene_dirty = true;
     let mut time = 0_f64;
+    let mut cursor_position = (0, 0);
+    let mut should_quit = false;
 
     event_loop.run(move |event, _, control_flow| {
 
-        if let Event::RedrawRequested(_) = event {
-            // Copy from the canvas to `pixels`
-            pixels.get_frame_mut().copy_from_slice(&canvas.data);
-            if pixels
-                .render()
-                .map_err(|_e| println!("Error") )
-                .is_err()
-            {
-                *control_flow = ControlFlow::Exit;
-                return;
+        // Handle various events
+        match &event {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested, window_id
+            } if window_id == &window.id() => {
+            },
+
+            Event::RedrawRequested(_) => {
+                // Copy from the canvas to `pixels`
+                pixels.get_frame_mut().copy_from_slice(&canvas.data);
+                if pixels
+                    .render()
+                    .map_err(|_e| println!("Error") )
+                    .is_err()
+                {
+                    *control_flow = ControlFlow::Exit;
+                    return;
+                }
             }
+            Event::WindowEvent {
+                event: WindowEvent::CursorMoved {device_id,position, .. }, ..
+            } => {
+                let logical_position = position.to_logical::<i32>(window.scale_factor());
+                // println!("Scale Factor: {}    Physical {:?}    Logical: {:?}", window.scale_factor(), position, logical_position);
+                cursor_position = (logical_position.x, logical_position.y);
+            },
+            _ => (),
         }
 
         // Handle input events
         if input.update(&event) {
 
             if input.key_pressed(VirtualKeyCode::Escape) || input.quit() {
-                // Quit
-                *control_flow = ControlFlow::Exit;
+                should_quit = true;
                 return;
+            }
+            if input.mouse_pressed(0) {
+                println!("mou ${:?}", cursor_position);
             }
 
             if let Some(size) = input.window_resized() {
@@ -90,7 +108,9 @@ fn main() -> Result<(), Error> {
             }
 
             if is_scene_dirty || !ADVANCE_ON_SPACEBAR_ONLY {
+
                 update_scene(&mut scene, time);
+
                 // Note, using the multi-threaded version of the render fuction here:
                 renderer::render_to_canvas_all_mt(&scene, &mut canvas, num_cpus::get());
                 time += TIME_INCREMENT;
@@ -98,21 +118,29 @@ fn main() -> Result<(), Error> {
                 window.request_redraw();
             }
         }
+
+        if should_quit {
+            *control_flow = ControlFlow::Exit;
+        }
     });
 }
 
 fn update_scene(scene: &mut Arc<RwLock<Scene>>, time: f64) {
+
+    // Write-lock and unwrap to gain access to the (mutatable) scene data.
     let mut scene = scene.write().unwrap();
 
-    // sphere pos
+    // sphere position
     let mut pos = &mut scene.spheres[0].center;
-    let radians = (f64::consts::PI / 180.0) * (time * 1.25);
-    pos.y = -1.0 + (radians.sin() * 1.5);
+    pos.y = (time * 1.25).to_radians().sin() * 1.5;
+
+    // sphere transparency
+    scene.spheres[1].transparency = (time * 3.0).to_radians().sin() * 0.3 + 0.7;
 
     // camera position and orientation
-    let radians = (time * 0.66).to_radians();
+    let radians = (time * 0.5).to_radians();
     let x = 0.0 + (radians.sin() * 5.0);
-    let z = 3.0 + (radians.cos() * -4.5);
+    let z = 3.0 + (radians.cos() * -4.0);
     scene.specs.camera_pos.x = x;
     scene.specs.camera_pos.z = z;
     let euler = Euler::<f64>::new(0.0, radians * -0.5, 0.0);

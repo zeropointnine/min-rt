@@ -1,0 +1,44 @@
+---
+specs:
+  viewport_width: 1.0
+  viewport_height: 1.0
+  canvas_width: 1.0
+  canvas_height: 1.0
+  viewport_distance: 0.66
+  pixel_ar: 1.0
+  camera_pos: [0.0, 0.0, 0.0]
+  camera_orientation: [1.0, 0.0, 0.0, 0.0]
+  background_color: [0,0,0]
+
+lights:
+  - ambient:
+      intensity: 1.0
+  - point:
+      intensity: 0.0
+      position: [0.0, 0.0, 1.0]
+  - directional:
+      intensity: 0.0
+      direction: [1.0, 4.0, 4.0]
+
+objects:
+  - sphere:
+      center: [0.0, 0.0, 3.0]
+      radius: 1.0
+      color: [255, 0, 0]
+      specular: 500.0
+      reflective: 0.0
+      transparency: 1.0 # 0.5
+  - sphere:
+      center: [0.0, 0.0, 4.1]
+      radius: 1.66
+      color: [0, 0, 255]
+      specular: 500.0
+      reflective: 0.0
+      transparency: 1.0
+#  - sphere:
+#      center: [0.0, 0.0, 5.2]
+#      radius: 1.66
+#      color: [0, 255, 0]
+#      specular: 500.0
+#      reflective: 0.5
+#      transparency: 1.0

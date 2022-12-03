@@ -18,18 +18,21 @@ fn main() {
         let mut lights = Vec::<Light>::new();
         lights.push(light);
 
-        let sphere = Sphere::new(
-            Vector3::<f64>::from([0.0, 0.0, 3.0]),
-            1.0,
-            Color::from_u8(255, 0, 0),
-            500.0,
-            -1.0);
+        let sphere = Sphere {
+            center: Vector3::<f64>::from([0.0, 0.0, 3.0]),
+            radius: 1.0,
+            color: Color::from_u8(255, 0, 0),
+            specular: 500.0,
+            reflective: 0.0,
+            transparency: 0.0 };
         let mut spheres = Vec::<Sphere>::new();
         spheres.push(sphere);
 
         Scene { specs, lights, spheres }
     };
-    // Extra necessary step of wrapping the scene with Arc<RwLock>> for multi-threading purposes
+
+    // Note the extra necessary step of wrapping the scene with Arc<RwLock>>
+    // for multi-threading purposes
     let scene = Arc::new(RwLock::new(scene));
 
     // Make the canvas onto which the scene will be rendered

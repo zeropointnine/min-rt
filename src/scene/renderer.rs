@@ -49,7 +49,7 @@ pub fn render_to_canvas_ranged(
             let d = quat.rotate_vector(d);
 
             let o = specs.camera_pos;
-            let color = trace_ray(o, d, 1.0, f64::INFINITY, &scene, RECURSION_DEPTH);
+            let color = trace_ray(o, d, 1.0, f64::INFINITY, &scene, -1, RECURSION_DEPTH);
 
             canvas.set_value(ix, canvas_y, &color);
         }
@@ -57,7 +57,7 @@ pub fn render_to_canvas_ranged(
 }
 
 pub fn render_to_canvas_all(
-        scene: &Arc<RwLock<Scene>>, canvas: &mut dyn Canvas<Color>) {
+    scene: &Arc<RwLock<Scene>>, canvas: &mut dyn Canvas<Color>) {
     let height = canvas.get_height();
     render_to_canvas_ranged(scene, canvas, 0_usize, height, height);
 }
@@ -131,59 +131,80 @@ fn intersect_ray_sphere(o: Vector3<f64>, d: Vector3<f64>, sphere: &Sphere) -> (f
 }
 
 /// Returns sphere index and closest_t
-fn closest_intersection(o: Vector3<f64>, d: Vector3<f64>, t_min:f64, t_max: f64, spheres: &Vec<Sphere>)
-        -> Option<(usize, f64)> {
+fn get_closest_ray_sphere_intersection(
+    origin: Vector3<f64>,
+    direction: Vector3<f64>,
+    t_min:f64,
+    t_max: f64,
+    spheres: &Vec<Sphere>,
+    sphere_ignore_index: i32)
+    -> Option<(f64, usize)> {
 
-    let mut closest_t = f64::INFINITY;
-    let mut closest_sphere_index: Option<usize> = None;
+    let mut result: Option<(f64, usize)> = None;
+
+    let mut closest_t  = f64::INFINITY;
     for (i, sphere) in spheres.iter().enumerate() {
-        let (t1, t2) = intersect_ray_sphere(o, d, &sphere);
-        if maths::within(t1, t_min, t_max) && t1 < closest_t {
+        if i as i32 == sphere_ignore_index {
+            continue;
+        }
+        let (t1, t2) = intersect_ray_sphere(origin, direction, &sphere);
+        if maths::contains(t1, t_min, t_max) && t1 < closest_t {
             closest_t = t1;
-            closest_sphere_index = Some(i);
+            result = Some((t1, i));
         }
-        if maths::within(t2, t_min, t_max) && t2 < closest_t {
+        if maths::contains(t2, t_min, t_max) && t2 < closest_t {
             closest_t = t2;
-            closest_sphere_index = Some(i);
+            result = Some((t2, i));
         }
     }
-    match closest_sphere_index {
-        None => None,
-        Some(closest_sphere_index) => Some((closest_sphere_index, closest_t))
-        // todo return borrowed sphere reference rather than index?
-    }
+    result
+    // todo return borrowed sphere reference rather than index?
 }
 
-fn trace_ray(o: Vector3<f64>, d: Vector3<f64>, t_min: f64, t_max: f64, scene: &Scene, recursion_depth: usize)
-        -> Color {
+fn trace_ray(
+    origin: Vector3<f64>,
+    direction: Vector3<f64>,
+    distance_min: f64,
+    distance_max: f64,
+    scene: &Scene,
+    ignore_sphere_index: i32,
+    recursion_depth: usize)
+    -> Color {
 
-    let option = closest_intersection(o, d, t_min, t_max, &scene.spheres);
-    if option.is_none() {
-        return scene.specs.background_color.clone();
-    }
+    let mut color;
 
     // Compute local color
-    let (closest_sphere_index, closest_t) = option.unwrap();
-    let closest_sphere = &scene.spheres[closest_sphere_index];
-    let p = o + (d * closest_t);
-    let mut n = p - closest_sphere.center;
+    let option = get_closest_ray_sphere_intersection(origin, direction, distance_min, distance_max, &scene.spheres, ignore_sphere_index);
+    if option.is_none() {
+        color = scene.specs.background_color.clone();
+        return color;
+    }
+    let (t1, sphere_index) = option.unwrap();
+    let sphere = &scene.spheres[sphere_index];
+    let p = origin + (direction * t1);
+    let mut n = p - sphere.center;
     n = n / n.magnitude();
-    let neg_d = d * -1.0;
-    let intensity = compute_lighting(p, n, neg_d, closest_sphere.specular, &scene);
-    let local_color = closest_sphere.color * intensity;
+    let neg_d = direction * -1.0;
+    let intensity = compute_lighting(p, n, neg_d, sphere.specular, &scene);
+    color = sphere.color * intensity;
 
-    // If we hit the recursion limit or the object is not reflective, we're done
-    let r = closest_sphere.reflective;
-    if recursion_depth == 0 || r <= 0.0 {
-        return local_color;
+    // Reflected color
+    if sphere.reflective > 0.0 && recursion_depth > 0 {
+        let neg_d = direction * -1.0;
+        let r2 = reflect_ray(neg_d, n);
+        // Recursion action
+        let reflected_color = trace_ray(p, r2, EPSILON, f64::INFINITY, scene, -1, recursion_depth - 1);
+        color = Color::lerp(color, reflected_color, sphere.reflective);
     }
 
-    // Compute the reflected color
-    let neg_d = d * -1.0;
-    let r2 = reflect_ray(neg_d, n);
-    let reflected_color = trace_ray(p, r2, EPSILON, f64::INFINITY, scene, recursion_depth - 1);
+    // Transparency
+    if sphere.transparency > 0.0 {
+        let trans_color
+            = trace_ray(p, direction, EPSILON, distance_max, scene, sphere_index as i32, 0);
+        color = Color::lerp(color, trans_color, sphere.transparency);
+    }
 
-    local_color * (1.0 - r)  +  reflected_color * r
+    return color
 }
 
 fn compute_lighting(p: Vector3<f64>, n: Vector3<f64>, v: Vector3<f64>, s: f64, scene: &Scene) -> f64 {
@@ -214,9 +235,9 @@ fn compute_lighting(p: Vector3<f64>, n: Vector3<f64>, v: Vector3<f64>, s: f64, s
         }
 
         // Shadow check
-        let option = closest_intersection(p, l, EPSILON, t_max, &scene.spheres);
+        let option = get_closest_ray_sphere_intersection(p, l, EPSILON, t_max, &scene.spheres, -1);
         if option.is_some() {
-            continue;
+            continue; // todo make shadow honor the transparency of the object which is casting it
         }
 
         // Diffuse
