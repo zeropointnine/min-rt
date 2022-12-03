@@ -3,8 +3,6 @@
 /// This is a reasonably faithful translation of the pseudo-code from the book
 /// ["Computer Graphics from Scratch"](https://gabrielgambetta.com/computer-graphics-from-scratch/)
 /// by Gabriel Gambetta.
-///
-/// Function and parameter names have been preserved for easy cross-referencing.
 
 use std::sync::{Arc, RwLock};
 use std::thread;
@@ -19,50 +17,64 @@ const EPSILON: f64 = 0.001;
 const RECURSION_DEPTH: usize = 3;
 
 pub fn render_to_canvas_ranged(
-        scene: &Arc<RwLock<Scene>>, canvas: &mut dyn Canvas<Color>,
-        canvas_y_start: usize, canvas_y_end: usize, canvas_full_height: usize) {
+        scene: &Arc<RwLock<Scene>>,
+        sub_canvas: &mut dyn Canvas<Color>,
+        full_canvas_row_start: usize,
+        full_canvas_row_end: usize,
+        full_canvas_height: usize) {
 
     let scene = scene.read().unwrap();
-    let specs = &scene.specs;
-    let canvas_grid_ar = canvas.get_width() as f64 / canvas_full_height as f64;
-    // Account for pixel aspect ratio (viz., for ANSI color output in the terminal)
-    let adjusted_viewport_width= specs.viewport_width * specs.pixel_ar;
 
-    for iy in canvas_y_start..canvas_y_end {
+    let full_canvas_num_cols = sub_canvas.get_width() as f64;
+    let full_canvas_num_rows = full_canvas_height as f64;
+    let canvas_width = scene.specs.canvas_width;  // rem, scene space (not data grid values)
+    let canvas_height = scene.specs.canvas_height;
+    let canvas_width_half = scene.specs.canvas_width * 0.5;
+    let canvas_height_half = scene.specs.canvas_width * 0.5;
 
-        let canvas_y = iy - canvas_y_start;
+    let mut viewport_width = scene.specs.viewport_width;
+    viewport_width *= full_canvas_num_cols / full_canvas_num_rows; // Adjust for canvas grid aspect ratio
+    viewport_width *= scene.specs.pixel_ar; // Adjust for pixel aspect ratio (viz., for terminal output)
+    let viewport_height = scene.specs.viewport_height;
 
-        let mut y = maths::map(iy as f64, 0.0, canvas_full_height as f64,
-            specs.canvas_height * 0.5, specs.canvas_height * -0.5);
+    for iy in full_canvas_row_start..full_canvas_row_end {
 
-        for ix in 0..canvas.get_width() {
+        let full_canvas_iy = iy - full_canvas_row_start;
 
-            let mut x = maths::map(ix as f64, 0.0,canvas.get_width() as f64,
-                specs.canvas_width * -0.5, specs.canvas_width * 0.5);
+        let y = maths::map(iy as f64,
+           0.0, full_canvas_num_rows, canvas_height_half, -canvas_height_half);
+        let y = y * (viewport_height / canvas_height);
 
-            x *= adjusted_viewport_width / specs.canvas_width;
-            x *= canvas_grid_ar; // Account for canvas grid size
-            y *= specs.viewport_height / specs.canvas_height;
+        for ix in 0..sub_canvas.get_width() {
+
+            let x = maths::map(ix as f64,
+                0.0, full_canvas_num_cols, -canvas_width_half, canvas_width_half);
+            let x = x * (viewport_width / canvas_width);
+
             let d = canvas_to_viewport(x, y, &scene.specs);
-
             let quat = scene.specs.camera_orientation.clone();
             let d = quat.rotate_vector(d);
 
-            let o = specs.camera_pos;
+            let o = scene.specs.camera_pos;
             let color = trace_ray(o, d, 1.0, f64::INFINITY, &scene, -1, RECURSION_DEPTH);
 
-            canvas.set_value(ix, canvas_y, &color);
+            sub_canvas.set_value(ix, full_canvas_iy, &color);
         }
     }
 }
 
 pub fn render_to_canvas_all(
-    scene: &Arc<RwLock<Scene>>, canvas: &mut dyn Canvas<Color>) {
+        scene: &Arc<RwLock<Scene>>,
+        canvas: &mut dyn Canvas<Color>) {
+
     let height = canvas.get_height();
     render_to_canvas_ranged(scene, canvas, 0_usize, height, height);
 }
 
-pub fn render_to_canvas_all_mt(scene: &Arc<RwLock<Scene>>, canvas: &mut dyn Canvas<Color>, worker_count: usize) {
+pub fn render_to_canvas_all_mt(
+        scene: &Arc<RwLock<Scene>>,
+        canvas: &mut dyn Canvas<Color>,
+        worker_count: usize) {
 
     let canvas_full_height = canvas.get_height();
     let mut handles = Vec::new();
@@ -113,11 +125,15 @@ fn canvas_to_viewport(x: f64, y: f64, specs: &Specs) -> Vector3<f64> {
 }
 
 /// Returns the two 'distances' on a ray where it intersects a sphere.
-fn intersect_ray_sphere(o: Vector3<f64>, d: Vector3<f64>, sphere: &Sphere) -> (f64, f64) {
+fn intersect_ray_sphere(
+        origin: Vector3<f64>,
+        direction: Vector3<f64>,
+        sphere: &Sphere) -> (f64, f64) {
+
     let r = sphere.radius;
-    let c0 = o - &sphere.center;
-    let a = d.magnitude2(); // ie, d dot d
-    let b = 2.0 * &c0.dot(d.clone());
+    let c0 = origin - &sphere.center;
+    let a = direction.magnitude2(); // ie, d dot d
+    let b = 2.0 * &c0.dot(direction.clone());
     let c = &c0.dot(c0.clone()) - (r * r);
 
     let discriminant = b * b  -  4.0 * a * c;
@@ -132,13 +148,12 @@ fn intersect_ray_sphere(o: Vector3<f64>, d: Vector3<f64>, sphere: &Sphere) -> (f
 
 /// Returns sphere index and closest_t
 fn get_closest_ray_sphere_intersection(
-    origin: Vector3<f64>,
-    direction: Vector3<f64>,
-    t_min:f64,
-    t_max: f64,
-    spheres: &Vec<Sphere>,
-    sphere_ignore_index: i32)
-    -> Option<(f64, usize)> {
+        origin: Vector3<f64>,
+        direction: Vector3<f64>,
+        t_min:f64,
+        t_max: f64,
+        spheres: &Vec<Sphere>,
+        sphere_ignore_index: i32) -> Option<(f64, usize)> {
 
     let mut result: Option<(f64, usize)> = None;
 
@@ -168,8 +183,7 @@ fn trace_ray(
     distance_max: f64,
     scene: &Scene,
     ignore_sphere_index: i32,
-    recursion_depth: usize)
-    -> Color {
+    recursion_depth: usize) -> Color {
 
     let mut color;
 
@@ -200,51 +214,66 @@ fn trace_ray(
     // Transparency
     if sphere.transparency > 0.0 {
         let trans_color
-            = trace_ray(p, direction, EPSILON, distance_max, scene, sphere_index as i32, 0);
+            = trace_ray(p, direction, EPSILON, distance_max, scene, sphere_index as i32, 3);
         color = Color::lerp(color, trans_color, sphere.transparency);
     }
 
     return color
 }
 
-fn compute_lighting(p: Vector3<f64>, n: Vector3<f64>, v: Vector3<f64>, s: f64, scene: &Scene) -> f64 {
+fn compute_lighting(
+        p: Vector3<f64>,
+        n: Vector3<f64>,
+        v: Vector3<f64>,
+        s: f64,
+        scene: &Scene) -> f64 {
 
-    let mut i = 0.0;
+    let mut final_intensity = 0.0;
 
     for light in &scene.lights {
 
+        let mut light_intensity:f64 = 0.0;
+
         let l: Vector3<f64>;
         let t_max;
-        let intens: f64;
+        let factor: f64;
 
         match light {
             Light::Ambient { intensity } => {
-                i += intensity;
+                final_intensity += intensity;
                 continue;
             },
             Light::Point{ intensity, position} => {
                 l = position - p;
                 t_max = 1.0;
-                intens = *intensity;
+                factor = *intensity;
             },
             Light::Directional { intensity, direction } => {
                 l = direction.clone();
                 t_max = f64::INFINITY;
-                intens = *intensity;
+                factor = *intensity;
             }
         }
 
-        // Shadow check
+        // Get shadow attenuation factor
+        let shadow_attenuation: f64;
         let option = get_closest_ray_sphere_intersection(p, l, EPSILON, t_max, &scene.spheres, -1);
-        if option.is_some() {
-            continue; // todo make shadow honor the transparency of the object which is casting it
+        match option {
+            Some((distance, index)) => {
+                // Attenuate by the object's amount of opacity
+                shadow_attenuation = 1.0 - scene.spheres[index].transparency;
+            },
+            _ => shadow_attenuation = 0.0
+        }
+         if shadow_attenuation == 1.0 {
+            continue;
         }
 
         // Diffuse
         let n_dot_l = n.dot(l);
         if n_dot_l > 0.0 {
-            let modif = intens * n_dot_l / (n.magnitude() * l.magnitude());
-            i += modif;
+            let modif = factor * n_dot_l / (n.magnitude() * l.magnitude());
+            light_intensity += modif;
         }
 
         // Specular
@@ -253,11 +282,16 @@ fn compute_lighting(p: Vector3<f64>, n: Vector3<f64>, v: Vector3<f64>, s: f64, s
             let r = &r - &l;
             let r_dot_v = r.dot(v);
             if r_dot_v > 0.0 {
-                i += intens * (r_dot_v / (r.magnitude() * v.magnitude())).powf(s);
+                light_intensity += factor * (r_dot_v / (r.magnitude() * v.magnitude())).powf(s);
             }
         }
+
+        // Apply shadow attenuation
+        light_intensity *= 1.0 - shadow_attenuation;
+
+        final_intensity += light_intensity;
     }
-    i
+    final_intensity
 }
 
 fn reflect_ray(r: Vector3<f64>, n: Vector3<f64>) -> Vector3<f64> {

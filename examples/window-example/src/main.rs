@@ -15,11 +15,13 @@ use min_rt::scene::scene::{Light, Scene};
 const WIDTH: usize = 800;
 const HEIGHT: usize = 800;
 const TIME_INCREMENT: f64 = 2.0;
-const ADVANCE_ON_SPACEBAR_ONLY: bool = false;
+
 
 fn main() -> Result<(), Error> {
 
-    if ADVANCE_ON_SPACEBAR_ONLY {
+    let mut should_update_every_frame = true;
+
+    if !should_update_every_frame {
         println!("\r\nPress spacebar to update scene");
     }
 
@@ -95,7 +97,8 @@ fn main() -> Result<(), Error> {
                 return;
             }
             if input.mouse_pressed(0) {
-                println!("mou ${:?}", cursor_position);
+                println!("${:?}", cursor_position);
+                should_update_every_frame = !should_update_every_frame;
             }
 
             if let Some(size) = input.window_resized() {
@@ -107,7 +110,7 @@ fn main() -> Result<(), Error> {
                 is_scene_dirty = true;
             }
 
-            if is_scene_dirty || !ADVANCE_ON_SPACEBAR_ONLY {
+            if is_scene_dirty || should_update_every_frame {
 
                 update_scene(&mut scene, time);
 
@@ -135,12 +138,12 @@ fn update_scene(scene: &mut Arc<RwLock<Scene>>, time: f64) {
     pos.y = (time * 1.25).to_radians().sin() * 1.5;
 
     // sphere transparency
-    scene.spheres[1].transparency = (time * 3.0).to_radians().sin() * 0.3 + 0.7;
+    scene.spheres[1].transparency = (time * 2.0).to_radians().cos() * 0.5 + 0.5; // * 0.3 + 0.3;
 
     // camera position and orientation
     let radians = (time * 0.5).to_radians();
     let x = 0.0 + (radians.sin() * 5.0);
-    let z = 3.0 + (radians.cos() * -4.0);
+    let z = 3.0 + (radians.cos() * -5.0);
     scene.specs.camera_pos.x = x;
     scene.specs.camera_pos.z = z;
     let euler = Euler::<f64>::new(0.0, radians * -0.5, 0.0);
@@ -149,6 +152,9 @@ fn update_scene(scene: &mut Arc<RwLock<Scene>>, time: f64) {
     // light
     let light: &mut Light = &mut scene.lights[1];
     if let Light::Point { intensity: _, position } = light {
+        let radians = (time * 0.8).to_radians();
+        let x = 0.0 + (radians.sin() * 5.0);
+        let z = 3.0 + (radians.cos() * -5.0);
         position.x = x;
         position.z = z;
     }
